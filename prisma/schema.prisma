@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      String   @default("CLIENT") // CLIENT | VENDOR | ADMIN
+  vendor    Vendor?
+  orders    Order[]  @relation("clientOrders")
+  createdAt DateTime @default(now())
+}
+
+model Vendor {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopName        String
+  stripeAccountId String?
+  status          String   @default("PENDING") // PENDING | ACTIVE | SUSPENDED
+  products        Product[]
+  createdAt       DateTime @default(now())
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  vendorId    String
+  vendor      Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  title       String
+  description String
+  price       Int      // en centimes
+  stock       Int      @default(0)
+  imageUrl    String?
+  category    String?
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  clientId        String
+  client          User     @relation("clientOrders", fields: [clientId], references: [id])
+  total           Int
+  status          String   @default("PENDING") // PENDING | PAID | SHIPPED | DELIVERED | CANCELLED | REFUNDED
+  stripePaymentId String?
+  items           OrderItem[]
+  createdAt       DateTime @default(now())
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  order      Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  vendorId   String
+  quantity   Int
+  unitPrice  Int
+  commission Int
+}
+
+model Transfer {
+  id               String   @id @default(cuid())
+  vendorId         String
+  orderId          String
+  amount           Int
+  stripeTransferId String?
+  createdAt        DateTime @default(now())
+}

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ma boutique — Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+  <main>
+    <h1>Ma boutique</h1>
+    <div id="alert"></div>
+
+    <div class="vendor-grid mt-6">
+      <div class="card" style="padding:20px">
+        <h2>Nouveau produit</h2>
+        <form id="productForm" class="mt-4">
+          <div>
+            <label>Titre</label>
+            <input type="text" name="title" required />
+          </div>
+          <div>
+            <label>Description</label>
+            <textarea name="description" required></textarea>
+          </div>
+          <div class="flex">
+            <div style="flex:1">
+              <label>Prix (€)</label>
+              <input type="number" name="price" step="0.01" min="0" required />
+            </div>
+            <div style="flex:1">
+              <label>Stock</label>
+              <input type="number" name="stock" min="0" value="1" />
+            </div>
+          </div>
+          <div>
+            <label>Catégorie</label>
+            <input type="text" name="category" placeholder="mode, tech, maison…" />
+          </div>
+          <div>
+            <label>URL de l'image (optionnel)</label>
+            <input type="url" name="imageUrl" />
+          </div>
+          <button type="submit" class="btn btn-primary">Créer</button>
+        </form>
+      </div>
+
+      <div class="card" style="padding:20px">
+        <h2>Mes produits</h2>
+        <div id="productsList" class="mt-4"></div>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { api, formatPrice, showAlert } from '/js/api.js';
+    import { renderHeader } from '/js/header.js';
+
+    await renderHeader('vendor');
+
+    const alertBox = document.getElementById('alert');
+    const list = document.getElementById('productsList');
+    const form = document.getElementById('productForm');
+
+    // Vérifier que l'utilisateur est bien vendeur
+    let me;
+    try { me = await api.get('/auth/me'); } catch { location.href = '/login.html'; }
+    if (!me || me.role !== 'VENDOR') {
+      location.href = '/login.html';
+    }
+
+    async function loadProducts() {
+      const products = await api.get(`/products?vendorId=${me.vendor.id}`);
+      if (!products.length) {
+        list.innerHTML = `<p class="empty">Aucun produit.</p>`;
+        return;
+      }
+      list.innerHTML = `
+        <table>
+          <thead><tr><th>Titre</th><th>Prix</th><th>Stock</th><th></th></tr></thead>
+          <tbody>
+            ${products.map(p => `
+              <tr>
+                <td>${p.title}</td>
+                <td>${formatPrice(p.price)}</td>
+                <td>${p.stock}</td>
+                <td><button class="btn btn-danger" data-id="${p.id}">Suppr.</button></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      list.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.onclick = async () => {
+          if (!confirm('Supprimer ce produit ?')) return;
+          try {
+            await api.delete(`/products/${btn.dataset.id}`);
+            loadProducts();
+          } catch (e) { showAlert(alertBox, e.message); }
+        };
+      });
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      try {
+        await api.post('/products', {
+          title: fd.get('title'),
+          description: fd.get('description'),
+          price: Math.round(parseFloat(fd.get('price')) * 100),
+          stock: parseInt(fd.get('stock') || 0),
+          category: fd.get('category') || null,
+          imageUrl: fd.get('imageUrl') || null,
+        });
+        showAlert(alertBox, 'Produit créé !', 'success');
+        form.reset();
+        loadProducts();
+      } catch (e) {
+        showAlert(alertBox, e.message);
+      }
+    };
+
+    loadProducts();
+  </script>
+</body>
+</html>

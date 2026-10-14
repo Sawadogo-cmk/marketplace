@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Catalogue — Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+
+  <main>
+    <div class="flex-between mt-4">
+      <h1>Catalogue</h1>
+      <input type="search" id="search" placeholder="Rechercher un produit..." />
+    </div>
+    <div id="grid" class="grid mt-6"></div>
+  </main>
+
+  <script type="module">
+    import { api, formatPrice } from '/js/api.js';
+    import { addToCart } from '/js/cart.js';
+    import { renderHeader } from '/js/header.js';
+
+    await renderHeader();
+
+    const grid = document.getElementById('grid');
+    const search = document.getElementById('search');
+
+    async function load(q = '') {
+      grid.innerHTML = '<p class="empty">Chargement…</p>';
+      try {
+        const url = '/products' + (q ? `?q=${encodeURIComponent(q)}` : '');
+        const products = await api.get(url);
+        render(products);
+      } catch (e) {
+        grid.innerHTML = `<p class="empty">${e.message}</p>`;
+      }
+    }
+
+    function render(products) {
+      if (!products.length) {
+        grid.innerHTML = `<p class="empty">Aucun produit trouvé.</p>`;
+        return;
+      }
+      grid.innerHTML = products.map(p => `
+        <article class="card">
+          <a href="/product.html?id=${p.id}">
+            <img src="${p.imageUrl || 'https://via.placeholder.com/300?text=Produit'}" alt="${p.title}" />
+          </a>
+          <div class="body">
+            <h3>${p.title}</h3>
+            <p class="vendor">${p.vendor?.shopName || ''}</p>
+            <p class="price">${formatPrice(p.price)}</p>
+          </div>
+          <div class="actions">
+            <a href="/product.html?id=${p.id}" class="btn" style="flex:1">Voir</a>
+            <button class="btn btn-primary" data-id="${p.id}" style="flex:1">Ajouter</button>
+          </div>
+        </article>
+      `).join('');
+
+      grid.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.onclick = () => {
+          addToCart(btn.dataset.id, 1);
+          btn.textContent = '✓ Ajouté';
+          setTimeout(() => btn.textContent = 'Ajouter', 1000);
+        };
+      });
+    }
+
+    let timer;
+    search.oninput = e => {
+      clearTimeout(timer);
+      timer = setTimeout(() => load(e.target.value.trim()), 250);
+    };
+
+    load();
+  </script>
+</body>
+</html>

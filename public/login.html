@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connexion — Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+
+  <main>
+    <div class="auth-wrap">
+      <div class="card" style="padding:28px">
+        <div class="tabs">
+          <button id="tabLogin" class="active">Connexion</button>
+          <button id="tabRegister">Inscription</button>
+        </div>
+
+        <div id="alert"></div>
+
+        <!-- Login -->
+        <form id="loginForm">
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" required />
+          </div>
+          <div>
+            <label>Mot de passe</label>
+            <input type="password" name="password" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Se connecter</button>
+        </form>
+
+        <!-- Register -->
+        <form id="registerForm" style="display:none">
+          <div>
+            <label>Nom</label>
+            <input type="text" name="name" required />
+          </div>
+          <div>
+            <label>Email</label>
+            <input type="email" name="email" required />
+          </div>
+          <div>
+            <label>Mot de passe</label>
+            <input type="password" name="password" required minlength="6" />
+          </div>
+          <div>
+            <label>Je suis</label>
+            <select name="role" id="roleSelect">
+              <option value="CLIENT">Client</option>
+              <option value="VENDOR">Vendeur</option>
+            </select>
+          </div>
+          <div id="shopNameWrap" style="display:none">
+            <label>Nom de la boutique</label>
+            <input type="text" name="shopName" />
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">Créer mon compte</button>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { api, showAlert } from '/js/api.js';
+    import { renderHeader } from '/js/header.js';
+
+    await renderHeader();
+
+    const alertBox = document.getElementById('alert');
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const tabLogin = document.getElementById('tabLogin');
+    const tabRegister = document.getElementById('tabRegister');
+    const roleSelect = document.getElementById('roleSelect');
+    const shopNameWrap = document.getElementById('shopNameWrap');
+
+    tabLogin.onclick = () => {
+      tabLogin.classList.add('active');
+      tabRegister.classList.remove('active');
+      loginForm.style.display = 'flex';
+      registerForm.style.display = 'none';
+      alertBox.innerHTML = '';
+    };
+    tabRegister.onclick = () => {
+      tabRegister.classList.add('active');
+      tabLogin.classList.remove('active');
+      registerForm.style.display = 'flex';
+      loginForm.style.display = 'none';
+      alertBox.innerHTML = '';
+    };
+    roleSelect.onchange = () => {
+      shopNameWrap.style.display = roleSelect.value === 'VENDOR' ? 'block' : 'none';
+    };
+
+    loginForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(loginForm);
+      try {
+        await api.post('/auth/login', {
+          email: fd.get('email'),
+          password: fd.get('password'),
+        });
+        showAlert(alertBox, 'Connecté ! Redirection…', 'success');
+        setTimeout(() => location.href = '/', 600);
+      } catch (err) {
+        showAlert(alertBox, err.message);
+      }
+    };
+
+    registerForm.onsubmit = async (e) => {
+      e.preventDefault();
+      const fd = new FormData(registerForm);
+      try {
+        await api.post('/auth/register', {
+          name: fd.get('name'),
+          email: fd.get('email'),
+          password: fd.get('password'),
+          role: fd.get('role'),
+          shopName: fd.get('shopName') || undefined,
+        });
+        showAlert(alertBox, 'Compte créé ! Redirection…', 'success');
+        setTimeout(() => location.href = '/', 700);
+      } catch (err) {
+        showAlert(alertBox, err.message);
+      }
+    };
+  </script>
+</body>
+</html>

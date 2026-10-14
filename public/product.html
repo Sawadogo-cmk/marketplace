@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Produit — Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+  <main id="content"><p class="empty">Chargement…</p></main>
+
+  <script type="module">
+    import { api, formatPrice } from '/js/api.js';
+    import { addToCart } from '/js/cart.js';
+    import { renderHeader } from '/js/header.js';
+
+    await renderHeader();
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const content = document.getElementById('content');
+
+    if (!id) {
+      content.innerHTML = `<p class="empty">Produit introuvable.</p>`;
+    } else {
+      try {
+        const p = await api.get(`/products/${id}`);
+        content.innerHTML = `
+          <div class="flex-between mt-4">
+            <a href="/products.html" class="muted">← Retour</a>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:16px">
+            <img src="${p.imageUrl || 'https://via.placeholder.com/600?text=Produit'}"
+                 alt="${p.title}"
+                 style="width:100%;border-radius:10px;background:#fff;border:1px solid var(--border)" />
+            <div>
+              <h1>${p.title}</h1>
+              <p class="muted">Vendu par <strong>${p.vendor.shopName}</strong></p>
+              <p class="price" style="font-size:28px;margin:16px 0">${formatPrice(p.price)}</p>
+              <p class="mt-4">${p.description}</p>
+              <p class="muted mt-2">Stock : ${p.stock}</p>
+              <div class="mt-6">
+                <button class="btn btn-primary btn-block" id="addBtn" ${p.stock <= 0 ? 'disabled' : ''}>
+                  ${p.stock > 0 ? 'Ajouter au panier' : 'Rupture de stock'}
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+
+        const addBtn = document.getElementById('addBtn');
+        if (addBtn && p.stock > 0) {
+          addBtn.onclick = () => {
+            addToCart(p.id, 1);
+            addBtn.textContent = '✓ Ajouté au panier';
+            setTimeout(() => addBtn.textContent = 'Ajouter au panier', 1200);
+          };
+        }
+      } catch (e) {
+        content.innerHTML = `<p class="empty">${e.message}</p>`;
+      }
+    }
+  </script>
+</body>
+</html>

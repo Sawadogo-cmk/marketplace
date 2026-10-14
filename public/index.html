@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+
+  <main>
+    <div class="flex-between">
+      <h1>Derniers produits</h1>
+      <a href="/products.html" class="btn">Voir tout →</a>
+    </div>
+    <div id="grid" class="grid"></div>
+  </main>
+
+  <script type="module">
+    import { api, formatPrice } from '/js/api.js';
+    import { addToCart } from '/js/cart.js';
+    import { renderHeader } from '/js/header.js';
+
+    await renderHeader();
+
+    const grid = document.getElementById('grid');
+    const products = await api.get('/products');
+    const recent = products.slice(0, 8);
+
+    if (!recent.length) {
+      grid.innerHTML = `<p class="empty">Aucun produit pour le moment.</p>`;
+    } else {
+      grid.innerHTML = recent.map(p => cardHTML(p)).join('');
+      bindAdd();
+    }
+
+    function cardHTML(p) {
+      return `
+        <article class="card">
+          <a href="/product.html?id=${p.id}">
+            <img src="${p.imageUrl || 'https://via.placeholder.com/300?text=Produit'}" alt="${p.title}" />
+          </a>
+          <div class="body">
+            <h3>${p.title}</h3>
+            <p class="vendor">${p.vendor?.shopName || ''}</p>
+            <p class="price">${formatPrice(p.price)}</p>
+          </div>
+          <div class="actions">
+            <a href="/product.html?id=${p.id}" class="btn" style="flex:1">Voir</a>
+            <button class="btn btn-primary" data-id="${p.id}" style="flex:1">Ajouter</button>
+          </div>
+        </article>
+      `;
+    }
+
+    function bindAdd() {
+      document.querySelectorAll('button[data-id]').forEach(btn => {
+        btn.onclick = () => {
+          addToCart(btn.dataset.id, 1);
+          btn.textContent = '✓ Ajouté';
+          setTimeout(() => btn.textContent = 'Ajouter', 1000);
+        };
+      });
+    }
+  </script>
+</body>
+</html>
