@@ -39,8 +39,9 @@
             <input type="text" name="category" placeholder="mode, tech, maison…" />
           </div>
           <div>
-            <label>URL de l'image (optionnel)</label>
-            <input type="url" name="imageUrl" />
+            <label>Image (jpg, png, webp — max 3 Mo)</label>
+            <input type="file" name="image" accept="image/*" />
+            <div id="preview" class="mt-2"></div>
           </div>
           <button type="submit" class="btn btn-primary">Créer</button>
         </form>
@@ -62,6 +63,7 @@
     const alertBox = document.getElementById('alert');
     const list = document.getElementById('productsList');
     const form = document.getElementById('productForm');
+    const preview = document.getElementById('preview');
 
     // Vérifier que l'utilisateur est bien vendeur
     let me;
@@ -69,6 +71,23 @@
     if (!me || me.role !== 'VENDOR') {
       location.href = '/login.html';
     }
+
+    // Aperçu de l'image sélectionnée
+    const fileInput = form.querySelector('input[name="image"]');
+    fileInput.onchange = () => {
+      preview.innerHTML = '';
+      const file = fileInput.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) {
+        showAlert(alertBox, 'Image trop lourde (max 3 Mo)');
+        fileInput.value = '';
+        return;
+      }
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.cssText = 'width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border)';
+      preview.appendChild(img);
+    };
 
     async function loadProducts() {
       const products = await api.get(`/products?vendorId=${me.vendor.id}`);
@@ -78,10 +97,14 @@
       }
       list.innerHTML = `
         <table>
-          <thead><tr><th>Titre</th><th>Prix</th><th>Stock</th><th></th></tr></thead>
+          <thead><tr><th></th><th>Titre</th><th>Prix</th><th>Stock</th><th></th></tr></thead>
           <tbody>
             ${products.map(p => `
               <tr>
+                <td>
+                  <img src="${p.imageUrl || 'https://picsum.photos/seed/' + p.id + '/60'}"
+                       style="width:40px;height:40px;object-fit:cover;border-radius:6px" />
+                </td>
                 <td>${p.title}</td>
                 <td>${formatPrice(p.price)}</td>
                 <td>${p.stock}</td>
@@ -104,21 +127,48 @@
 
     form.onsubmit = async (e) => {
       e.preventDefault();
-      const fd = new FormData(form);
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Envoi…';
+
       try {
+        let imageUrl = null;
+
+        // 1. Upload de l'image si fournie
+        const file = fileInput.files[0];
+        if (file) {
+          const fdImg = new FormData();
+          fdImg.append('image', file);
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: fdImg,
+            credentials: 'include',
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Erreur upload');
+          imageUrl = data.url;
+        }
+
+        // 2. Création du produit
+        const fd = new FormData(form);
         await api.post('/products', {
           title: fd.get('title'),
           description: fd.get('description'),
           price: Math.round(parseFloat(fd.get('price')) * 100),
           stock: parseInt(fd.get('stock') || 0),
           category: fd.get('category') || null,
-          imageUrl: fd.get('imageUrl') || null,
+          imageUrl,
         });
+
         showAlert(alertBox, 'Produit créé !', 'success');
         form.reset();
+        preview.innerHTML = '';
         loadProducts();
       } catch (e) {
         showAlert(alertBox, e.message);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Créer';
       }
     };
 
