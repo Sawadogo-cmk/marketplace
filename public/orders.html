@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mes commandes — Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+  <main>
+    <div class="page-head">
+      <div>
+        <h1>Mes commandes</h1>
+        <p class="subtitle" id="subtitle">Historique de vos achats</p>
+      </div>
+    </div>
+
+    <div id="orders"></div>
+  </main>
+
+  <script type="module">
+    import { api, formatPrice } from '/js/api.js';
+    import { renderHeader } from '/js/header.js';
+
+    await renderHeader();
+
+    const container = document.getElementById('orders');
+    const subtitle = document.getElementById('subtitle');
+
+    let me;
+    try { me = await api.get('/auth/me'); } catch { location.href = '/login.html'; }
+
+    if (me.role === 'VENDOR') subtitle.textContent = 'Commandes reçues sur votre boutique';
+
+    const statusLabels = {
+      PENDING:   { label: 'En attente',   color: 'var(--gray-500)' },
+      PAID:      { label: 'Payée',        color: 'var(--success)' },
+      SHIPPED:   { label: 'Expédiée',     color: '#2563eb' },
+      DELIVERED: { label: 'Livrée',       color: 'var(--success)' },
+      CANCELLED: { label: 'Annulée',      color: 'var(--danger)' },
+      REFUNDED:  { label: 'Remboursée',   color: 'var(--gray-500)' },
+    };
+
+    try {
+      const orders = await api.get('/orders');
+
+      if (!orders.length) {
+        container.innerHTML = `
+          <div class="empty">
+            <div class="empty-icon">📦</div>
+            <p>Aucune commande pour le moment</p>
+            <p class="muted mt-2"><a href="/products.html">Découvrir les produits →</a></p>
+          </div>
+        `;
+      } else {
+        container.innerHTML = orders.map(o => {
+          const st = statusLabels[o.status] || statusLabels.PENDING;
+          const date = new Date(o.createdAt).toLocaleDateString('fr-FR', {
+            day: 'numeric', month: 'long', year: 'numeric',
+          });
+
+          // Calcul commission totale (vendeur uniquement)
+          const commissionTotal = o.items.reduce((s, i) => s + (i.commission || 0), 0);
+          const net = o.total - commissionTotal;
+
+          return `
+            <div class="panel" style="margin-bottom:16px">
+              <div class="panel-head">
+                <div>
+                  <div style="display:flex;align-items:center;gap:10px">
+                    <strong style="font-size:15px">Commande #${o.id.slice(-8)}</strong>
+                    <span style="color:${st.color};font-size:12.5px;font-weight:600">● ${st.label}</span>
+                  </div>
+                  <p class="muted" style="margin-top:4px">${date}</p>
+                  ${me.role === 'VENDOR' && o.client ? `<p class="muted" style="font-size:12.5px">Client : ${o.client.name} (${o.client.email})</p>` : ''}
+                </div>
+                <div style="text-align:right">
+                  <div style="font-size:18px;font-weight:700">${formatPrice(o.total)}</div>
+                  ${me.role === 'VENDOR' ? `
+                    <div class="muted" style="font-size:12px">dont commission ${formatPrice(commissionTotal)}</div>
+                    <div style="font-size:13px;font-weight:600;color:var(--success)">Net : ${formatPrice(net)}</div>
+                  ` : ''}
+                </div>
+              </div>
+
+              <div>
+                ${o.items.map(i => `
+                  <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-top:1px solid var(--gray-200)">
+                    <img src="${i.product?.imageUrl || 'https://picsum.photos/seed/' + i.productId + '/60'}"
+                         style="width:48px;height:48px;object-fit:cover;border-radius:6px"
+                         alt="${i.product?.title || ''}" />
+                    <div style="flex:1">
+                      <div style="font-weight:500;font-size:14px">${i.product?.title || 'Produit supprimé'}</div>
+                      <div class="muted" style="font-size:12.5px">Quantité : ${i.quantity} × ${formatPrice(i.unitPrice)}</div>
+                    </div>
+                    <div style="font-weight:600">${formatPrice(i.unitPrice * i.quantity)}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    } catch (e) {
+      container.innerHTML = `<div class="alert alert-error">${e.message}</div>`;
+    }
+  </script>
+</body>
+</html>

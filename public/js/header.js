@@ -13,14 +13,15 @@ export async function renderHeader(active = '') {
     <header>
       <a href="/" class="logo">🛍️ Marketplace</a>
       <nav>
-        <a href="/products.html">Produits</a>
-        ${me?.role === 'VENDOR' ? `<a href="/vendor.html">Ma boutique</a>` : ''}
-        <a href="/cart.html">Panier <span class="badge" id="cartCount">${count()}</span></a>
-        ${me
-          ? `<span class="muted">${me.name}</span>
-             <button class="btn" id="logoutBtn">Déconnexion</button>`
-          : `<a href="/login.html" class="btn">Connexion</a>`}
-      </nav>
+  <a href="/products.html">Produits</a>
+  ${me?.role === 'VENDOR' ? `<a href="/vendor.html">Ma boutique</a>` : ''}
+  ${me ? `<a href="/orders.html">${me.role === 'VENDOR' ? 'Commandes reçues' : 'Mes commandes'}</a>` : ''}
+  <a href="/cart.html">Panier <span class="badge" id="cartCount">${count()}</span></a>
+  ${me
+    ? `<span class="muted" style="padding:0 8px">${me.name}</span>
+       <button class="btn" id="logoutBtn">Déconnexion</button>`
+    : `<a href="/login.html" class="btn">Connexion</a>`}
+</nav>
     </header>
   `;
 

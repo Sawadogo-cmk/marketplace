@@ -12,6 +12,7 @@ app.use(cookieParser());
 app.use(express.json());
 app.use('/api/products', require('./routes/products'));
 app.use('/api/upload', require('./routes/upload'));
+app.use('/api/orders', require('./routes/orders'));
 
 // statiques
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
