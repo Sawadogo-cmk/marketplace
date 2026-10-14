@@ -19,8 +19,8 @@ export const api = {
   delete: (p)       => request(p, { method: 'DELETE' }),
 };
 
-export function formatPrice(centimes) {
-  return (centimes / 100).toFixed(2).replace('.', ',') + ' €';
+export function formatPrice(montant) {
+  return new Intl.NumberFormat('fr-FR').format(montant) + ' FCFA';
 }
 
 export function showAlert(container, msg, type = 'error') {
