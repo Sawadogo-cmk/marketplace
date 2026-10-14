@@ -32,7 +32,6 @@
     const alertBox = document.getElementById('alert');
     const subtitle = document.getElementById('subtitle');
 
-    // Vérifier connexion
     let me = null;
     try { me = await api.get('/auth/me'); } catch {}
 
@@ -51,7 +50,6 @@
         return;
       }
 
-      // Charger les produits du panier
       const products = await Promise.all(
         cart.map(i => api.get(`/products/${i.productId}`).catch(() => null))
       );
@@ -88,11 +86,11 @@
                 </p>
               </div>
               <div class="qty">
-                <button data-action="dec" data-id="${i.productId}" aria-label="Diminuer">−</button>
+                <button data-action="dec" data-id="${i.productId}">−</button>
                 <span>${i.quantity}</span>
-                <button data-action="inc" data-id="${i.productId}" aria-label="Augmenter">+</button>
+                <button data-action="inc" data-id="${i.productId}">+</button>
               </div>
-              <button class="btn btn-danger" data-action="del" data-id="${i.productId}" title="Retirer">✕</button>
+              <button class="btn btn-danger" data-action="del" data-id="${i.productId}">✕</button>
             </div>
           `).join('')}
         </div>
@@ -111,13 +109,11 @@
         </div>
       `;
 
-      // Boutons quantité / suppression
       container.querySelectorAll('button[data-action]').forEach(btn => {
         btn.onclick = () => {
           const id = btn.dataset.id;
           const item = items.find(i => i.productId === id);
           if (!item) return;
-
           if (btn.dataset.action === 'inc') setQuantity(id, item.quantity + 1);
           if (btn.dataset.action === 'dec') setQuantity(id, item.quantity - 1);
           if (btn.dataset.action === 'del') removeFromCart(id);
@@ -125,46 +121,32 @@
         };
       });
 
-      // Vider le panier
       document.getElementById('clearBtn').onclick = () => {
-        if (confirm('Vider le panier ?')) {
-          clearCart();
-          render();
-        }
+        if (confirm('Vider le panier ?')) { clearCart(); render(); }
       };
 
-      // Commande
       document.getElementById('checkoutBtn').onclick = async () => {
-        // 1. Vérifier connexion
-        if (!me) {
-          location.href = '/login.html';
-          return;
-        }
-
-        // 2. Confirmer
-        if (!confirm(`Confirmer la commande de ${formatPrice(total)} ?`)) return;
+        if (!me) { location.href = '/login.html'; return; }
 
         const btn = document.getElementById('checkoutBtn');
         btn.disabled = true;
-        btn.textContent = 'Traitement…';
+        btn.textContent = 'Création de la commande…';
 
         try {
-          const body = {
+          const order = await api.post('/orders', {
             items: items.map(i => ({
               productId: i.productId,
               quantity: i.quantity,
             })),
-          };
+          });
 
-          const order = await api.post('/orders', body);
+          btn.textContent = 'Redirection vers le paiement…';
+          const { url } = await api.post('/stripe/checkout', { orderId: order.id });
+
           clearCart();
-
-          showAlert(alertBox, `✓ Commande #${order.id.slice(-8)} créée avec succès !`, 'success');
-
-          setTimeout(() => {
-            location.href = '/orders.html';
-          }, 1000);
+          location.href = url;
         } catch (e) {
+          console.error(e);
           showAlert(alertBox, e.message);
           btn.disabled = false;
           btn.textContent = 'Commander';

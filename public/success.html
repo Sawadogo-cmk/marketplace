@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Paiement réussi — Marketplace</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="header"></div>
+  <main>
+    <div class="empty" style="padding-top:80px">
+      <div style="font-size:56px;margin-bottom:20px">✅</div>
+      <h1 style="margin-bottom:8px">Paiement réussi</h1>
+      <p class="subtitle">Votre commande a bien été enregistrée.</p>
+      <p class="muted" id="orderRef" style="margin-bottom:24px"></p>
+      <div class="flex" style="justify-content:center">
+        <a href="/orders.html" class="btn btn-primary btn-lg">Voir mes commandes</a>
+        <a href="/products.html" class="btn btn-lg">Continuer mes achats</a>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { renderHeader } from '/js/header.js';
+    await renderHeader();
+
+    const params = new URLSearchParams(location.search);
+    const orderId = params.get('order');
+    if (orderId) {
+      document.getElementById('orderRef').textContent = `Commande #${orderId.slice(-8)}`;
+    }
+  </script>
+</body>
+</html>
