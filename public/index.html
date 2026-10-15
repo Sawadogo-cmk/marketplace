@@ -3,66 +3,202 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Marketplace</title>
+  <title>Marketplace — Achetez en toute confiance</title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
   <div id="header"></div>
 
   <main>
-    <div class="flex-between">
-      <h1>Derniers produits</h1>
-      <a href="/products.html" class="btn">Voir tout →</a>
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-inner">
+        <div>
+          <h1>Achetez local,<br />vendez sans limites.</h1>
+          <p>Découvrez des milliers de produits uniques de vendeurs passionnés. Paiements sécurisés, livraison rapide partout au Burkina Faso.</p>
+          <div class="hero-actions">
+            <a href="/products.html" class="hero-btn hero-btn-primary">
+              Explorer le catalogue →
+            </a>
+            <a href="/login.html" class="hero-btn hero-btn-ghost">
+              Devenir vendeur
+            </a>
+          </div>
+        </div>
+        <div class="hero-visual">
+          <div class="hero-card"><img src="https://picsum.photos/seed/hero-1/800/400" alt="" /></div>
+          <div class="hero-card"><img src="https://picsum.photos/seed/hero-2/400/400" alt="" /></div>
+          <div class="hero-card"><img src="https://picsum.photos/seed/hero-3/400/400" alt="" /></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="container">
+      <!-- CATÉGORIES -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>Parcourir par catégorie</h2>
+            <p class="section-sub">Trouvez rapidement ce qui vous plaît</p>
+          </div>
+        </div>
+        <div class="categories" id="categories"></div>
+      </section>
+
+      <!-- NOUVEAUTÉS -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>Nouveautés</h2>
+            <p class="section-sub">Les derniers produits ajoutés</p>
+          </div>
+          <a href="/products.html" class="btn">Voir tout →</a>
+        </div>
+        <div class="grid" id="newProducts"></div>
+      </section>
+
+      <!-- BANNIÈRE -->
+      <section class="section">
+        <div class="promo-banner">
+          <div class="promo-banner-text">
+            <h2>Vous avez des produits à vendre ?</h2>
+            <p>Ouvrez votre boutique gratuitement et recevez vos paiements automatiquement.</p>
+            <a href="/login.html" class="hero-btn hero-btn-primary" style="margin-top:16px;display:inline-flex">
+              Créer ma boutique
+            </a>
+          </div>
+          <div class="promo-banner-visual">
+            <div class="promo-emoji">🛍️</div>
+            <div class="promo-emoji">💳</div>
+            <div class="promo-emoji">📦</div>
+            <div class="promo-emoji">✨</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TOP PRODUITS -->
+      <section class="section">
+        <div class="section-head">
+          <div>
+            <h2>Les plus populaires</h2>
+            <p class="section-sub">Nos coups de cœur du moment</p>
+          </div>
+          <a href="/products.html" class="btn">Voir tout →</a>
+        </div>
+        <div class="grid" id="topProducts"></div>
+      </section>
     </div>
-    <div id="grid" class="grid"></div>
   </main>
+
+  <div id="footer"></div>
 
   <script type="module">
     import { api, formatPrice } from '/js/api.js';
     import { addToCart } from '/js/cart.js';
     import { renderHeader } from '/js/header.js';
+    import { renderFooter } from '/js/footer.js';
 
     await renderHeader();
+    renderFooter();
 
-    const grid = document.getElementById('grid');
-    const products = await api.get('/products');
-    const recent = products.slice(0, 8);
+    const CATEGORIES = [
+      { slug: 'mode',   name: 'Mode',   emoji: '👗' },
+      { slug: 'tech',   name: 'Tech',   emoji: '📱' },
+      { slug: 'maison', name: 'Maison', emoji: '🏠' },
+      { slug: 'sport',  name: 'Sport',  emoji: '⚽' },
+      { slug: 'beaute', name: 'Beauté', emoji: '💄' },
+    ];
 
-    if (!recent.length) {
-      grid.innerHTML = `<p class="empty">Aucun produit pour le moment.</p>`;
-    } else {
-      grid.innerHTML = recent.map(p => cardHTML(p)).join('');
-      bindAdd();
+    let allProducts = [];
+
+    async function load() {
+      try {
+        allProducts = await api.get('/products');
+
+        renderCategories();
+        renderNew();
+        renderTop();
+      } catch (e) {
+        console.error(e);
+        document.getElementById('newProducts').innerHTML =
+          `<p class="empty">${e.message}</p>`;
+      }
+    }
+
+    function renderCategories() {
+      const el = document.getElementById('categories');
+      el.innerHTML = CATEGORIES.map(c => {
+        const count = allProducts.filter(p => p.category === c.slug).length;
+        return `
+          <a href="/products.html?category=${c.slug}" class="cat-card">
+            <div class="cat-emoji">${c.emoji}</div>
+            <div class="cat-name">${c.name}</div>
+            <div class="cat-count">${count} produit${count > 1 ? 's' : ''}</div>
+          </a>
+        `;
+      }).join('');
     }
 
     function cardHTML(p) {
       return `
-        <article class="card">
-          <a href="/product.html?id=${p.id}">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/300?text=Produit'}" alt="${p.title}" />
+        <article class="product-card">
+          <a href="/product.html?id=${p.id}" class="product-img-wrap">
+            <img src="${p.imageUrl || 'https://picsum.photos/seed/' + p.id + '/600'}" alt="${p.title}" loading="lazy" />
+            ${p.category ? `<span class="product-cat-tag">${p.category}</span>` : ''}
           </a>
-          <div class="body">
-            <h3>${p.title}</h3>
-            <p class="vendor">${p.vendor?.shopName || ''}</p>
-            <p class="price">${formatPrice(p.price)}</p>
+          <div class="product-body">
+            <a href="/product.html?id=${p.id}" class="product-title">${p.title}</a>
+            <div class="product-vendor">🏪 ${p.vendor?.shopName || ''}</div>
+            <div class="product-price">${formatPrice(p.price)}</div>
           </div>
-          <div class="actions">
-            <a href="/product.html?id=${p.id}" class="btn" style="flex:1">Voir</a>
-            <button class="btn btn-primary" data-id="${p.id}" style="flex:1">Ajouter</button>
+          <div class="product-actions">
+            <button class="btn btn-primary btn-block" data-id="${p.id}">Ajouter au panier</button>
           </div>
         </article>
       `;
     }
 
-    function bindAdd() {
-      document.querySelectorAll('button[data-id]').forEach(btn => {
+    function bindAdd(gridEl) {
+      gridEl.querySelectorAll('button[data-id]').forEach(btn => {
         btn.onclick = () => {
           addToCart(btn.dataset.id, 1);
+          const original = btn.textContent;
           btn.textContent = '✓ Ajouté';
-          setTimeout(() => btn.textContent = 'Ajouter', 1000);
+          btn.style.background = 'var(--success)';
+          btn.style.borderColor = 'var(--success)';
+          setTimeout(() => {
+            btn.textContent = original;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+          }, 1200);
         };
       });
     }
+
+    function renderNew() {
+      const items = [...allProducts]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 8);
+
+      const el = document.getElementById('newProducts');
+      el.innerHTML = items.length
+        ? items.map(cardHTML).join('')
+        : '<p class="empty">Aucun produit pour le moment.</p>';
+      bindAdd(el);
+    }
+
+    function renderTop() {
+      // "Populaires" = mélange aléatoire stable (par id) — placeholder
+      const items = [...allProducts]
+        .sort((a, b) => a.id.localeCompare(b.id))
+        .slice(0, 4);
+
+      const el = document.getElementById('topProducts');
+      el.innerHTML = items.map(cardHTML).join('');
+      bindAdd(el);
+    }
+
+    load();
   </script>
 </body>
 </html>

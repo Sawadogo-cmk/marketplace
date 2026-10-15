@@ -8,58 +8,308 @@
 </head>
 <body>
   <div id="header"></div>
-  <main id="content"><p class="empty">Chargement…</p></main>
 
-  <script type="module">
-    import { api, formatPrice } from '/js/api.js';
-    import { addToCart } from '/js/cart.js';
-    import { renderHeader } from '/js/header.js';
+  <main>
+    <div class="container">
+      <!-- Breadcrumb -->
+      <nav class="breadcrumb" id="breadcrumb"></nav>
 
-    await renderHeader();
+      <!-- Chargement -->
+      <div id="loading" class="empty" style="padding:120px 24px">
+        <div class="empty-icon">⏳</div>
+        <p>Chargement du produit…</p>
+      </div>
 
-    const params = new URLSearchParams(location.search);
-    const id = params.get('id');
-    const content = document.getElementById('content');
-
-    if (!id) {
-      content.innerHTML = `<p class="empty">Produit introuvable.</p>`;
-    } else {
-      try {
-        const p = await api.get(`/products/${id}`);
-        content.innerHTML = `
-          <div class="flex-between mt-4">
-            <a href="/products.html" class="muted">← Retour</a>
+      <!-- Contenu principal -->
+      <div id="content" style="display:none">
+        <!-- Détail produit -->
+        <div class="product-detail">
+          <div class="product-gallery">
+            <img id="mainImage" src="" alt="" />
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:16px">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/600?text=Produit'}"
-                 alt="${p.title}"
-                 style="width:100%;border-radius:10px;background:#fff;border:1px solid var(--border)" />
-            <div>
-              <h1>${p.title}</h1>
-              <p class="muted">Vendu par <strong>${p.vendor.shopName}</strong></p>
-              <p class="price" style="font-size:28px;margin:16px 0">${formatPrice(p.price)}</p>
-              <p class="mt-4">${p.description}</p>
-              <p class="muted mt-2">Stock : ${p.stock}</p>
-              <div class="mt-6">
-                <button class="btn btn-primary btn-block" id="addBtn" ${p.stock <= 0 ? 'disabled' : ''}>
-                  ${p.stock > 0 ? 'Ajouter au panier' : 'Rupture de stock'}
-                </button>
+
+          <div class="product-info">
+            <div class="product-cat-inline" id="catInline"></div>
+            <h1 id="pTitle"></h1>
+            <div class="product-vendor-line" id="vendorLine"></div>
+            <div class="product-price-line" id="pPrice"></div>
+
+            <p class="product-desc" id="pDesc"></p>
+
+            <div class="product-meta">
+              <div class="product-meta-item">
+                <span class="product-meta-label">Stock</span>
+                <span class="product-meta-value" id="pStock"></span>
+              </div>
+              <div class="product-meta-item">
+                <span class="product-meta-label">Catégorie</span>
+                <span class="product-meta-value" id="pCat"></span>
+              </div>
+              <div class="product-meta-item">
+                <span class="product-meta-label">Vendeur</span>
+                <span class="product-meta-value" id="pVendor"></span>
+              </div>
+            </div>
+
+            <div class="qty-row">
+              <label>Quantité</label>
+              <div class="qty" style="width:130px">
+                <button type="button" id="qtyDec">−</button>
+                <span id="qtyValue">1</span>
+                <button type="button" id="qtyInc">+</button>
+              </div>
+            </div>
+
+            <div id="alert"></div>
+
+            <button class="btn btn-primary btn-lg btn-block" id="addBtn" style="margin-top:16px">
+              🛒 Ajouter au panier
+            </button>
+
+            <div class="trust-row">
+              <div class="trust-item">
+                <div class="trust-icon">🔒</div>
+                <div>
+                  <div class="trust-title">Paiement sécurisé</div>
+                  <div class="trust-sub">Via Stripe</div>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon">🚚</div>
+                <div>
+                  <div class="trust-title">Livraison rapide</div>
+                  <div class="trust-sub">Partout au pays</div>
+                </div>
+              </div>
+              <div class="trust-item">
+                <div class="trust-icon">↩️</div>
+                <div>
+                  <div class="trust-title">Retour 14 jours</div>
+                  <div class="trust-sub">Satisfait ou remboursé</div>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <!-- Infos vendeur -->
+        <section class="section" id="vendorSection">
+          <div class="panel vendor-card">
+            <div class="vendor-card-avatar" id="vendorAvatar"></div>
+            <div class="vendor-card-info">
+              <div class="vendor-card-label">Vendu par</div>
+              <h2 id="vendorShopName"></h2>
+              <p class="muted" id="vendorStats"></p>
+            </div>
+            <a class="btn" id="vendorBtn" href="#">Voir la boutique →</a>
+          </div>
+        </section>
+
+        <!-- Produits similaires -->
+        <section class="section" id="similarSection" style="display:none">
+          <div class="section-head">
+            <div>
+              <h2>Produits similaires</h2>
+              <p class="section-sub">Dans la même catégorie</p>
+            </div>
+            <a href="#" class="btn" id="similarSeeAll">Voir tout →</a>
+          </div>
+          <div class="grid" id="similarGrid"></div>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <div id="footer"></div>
+
+  <script type="module">
+    import { api, formatPrice, showAlert } from '/js/api.js';
+    import { addToCart } from '/js/cart.js';
+    import { renderHeader } from '/js/header.js';
+    import { renderFooter } from '/js/footer.js';
+
+    await renderHeader();
+    renderFooter();
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id');
+    const loading = document.getElementById('loading');
+    const content = document.getElementById('content');
+    const alertBox = document.getElementById('alert');
+
+    if (!id) {
+      loading.innerHTML = `
+        <div class="empty-icon">🔍</div>
+        <h3>Produit introuvable</h3>
+        <p class="muted mt-2"><a href="/products.html">Retour au catalogue</a></p>
+      `;
+    } else {
+      loadProduct(id);
+    }
+
+    async function loadProduct(productId) {
+      try {
+        const p = await api.get(`/products/${productId}`);
+
+        // -- Breadcrumb --
+        document.getElementById('breadcrumb').innerHTML = `
+          <a href="/">Accueil</a>
+          <span>›</span>
+          <a href="/products.html">Catalogue</a>
+          ${p.category ? `<span>›</span><a href="/products.html?category=${p.category}">${capitalize(p.category)}</a>` : ''}
+          <span>›</span>
+          <span class="current">${p.title}</span>
         `;
 
+        // -- Images --
+        document.getElementById('mainImage').src =
+          p.imageUrl || `https://picsum.photos/seed/${p.id}/800/800`;
+        document.getElementById('mainImage').alt = p.title;
+
+        // -- Infos --
+        document.getElementById('catInline').innerHTML = p.category
+          ? `<span class="cat-inline-tag">${p.category}</span>`
+          : '';
+        document.getElementById('pTitle').textContent = p.title;
+        document.getElementById('pPrice').textContent = formatPrice(p.price);
+        document.getElementById('pDesc').textContent = p.description;
+
+        // -- Vendeur ligne --
+        document.getElementById('vendorLine').innerHTML = `
+          <span class="vendor-dot">🏪</span>
+          <span>Vendu par <strong>${p.vendor?.shopName || 'Vendeur'}</strong></span>
+        `;
+
+        // -- Meta --
+        document.getElementById('pStock').textContent =
+          p.stock > 0 ? `${p.stock} en stock` : 'Rupture de stock';
+        document.getElementById('pStock').style.color =
+          p.stock > 0 ? 'var(--success)' : 'var(--danger)';
+        document.getElementById('pCat').textContent = p.category || '—';
+        document.getElementById('pVendor').textContent = p.vendor?.shopName || '—';
+
+        // -- Bouton ajout --
         const addBtn = document.getElementById('addBtn');
-        if (addBtn && p.stock > 0) {
-          addBtn.onclick = () => {
-            addToCart(p.id, 1);
-            addBtn.textContent = '✓ Ajouté au panier';
-            setTimeout(() => addBtn.textContent = 'Ajouter au panier', 1200);
-          };
+        const qtyValue = document.getElementById('qtyValue');
+        const qtyDec = document.getElementById('qtyDec');
+        const qtyInc = document.getElementById('qtyInc');
+        let qty = 1;
+
+        if (p.stock <= 0) {
+          addBtn.disabled = true;
+          addBtn.textContent = 'Rupture de stock';
         }
+
+        qtyDec.onclick = () => {
+          if (qty > 1) {
+            qty--;
+            qtyValue.textContent = qty;
+          }
+        };
+        qtyInc.onclick = () => {
+          if (qty < p.stock) {
+            qty++;
+            qtyValue.textContent = qty;
+          }
+        };
+
+        addBtn.onclick = () => {
+          addToCart(p.id, qty);
+          const original = addBtn.innerHTML;
+          addBtn.innerHTML = `✓ ${qty} article${qty > 1 ? 's' : ''} ajouté${qty > 1 ? 's' : ''} au panier`;
+          addBtn.style.background = 'var(--success)';
+          addBtn.style.borderColor = 'var(--success)';
+          setTimeout(() => {
+            addBtn.innerHTML = original;
+            addBtn.style.background = '';
+            addBtn.style.borderColor = '';
+          }, 1800);
+        };
+
+        // -- Bloc vendeur --
+        renderVendorBlock(p.vendor);
+
+        // -- Produits similaires --
+        if (p.category) {
+          loadSimilar(p.id, p.category, p.vendor?.shopName);
+        }
+
+        // -- Afficher --
+        loading.style.display = 'none';
+        content.style.display = 'block';
       } catch (e) {
-        content.innerHTML = `<p class="empty">${e.message}</p>`;
+        loading.innerHTML = `
+          <div class="empty-icon">❌</div>
+          <h3>${e.message}</h3>
+          <p class="muted mt-2"><a href="/products.html">Retour au catalogue</a></p>
+        `;
       }
+    }
+
+    function renderVendorBlock(vendor) {
+      if (!vendor) return;
+
+      document.getElementById('vendorAvatar').textContent =
+        (vendor.shopName || '?').charAt(0).toUpperCase();
+      document.getElementById('vendorShopName').textContent = vendor.shopName;
+      document.getElementById('vendorStats').textContent =
+        'Vendeur vérifié sur Marketplace';
+
+      const btn = document.getElementById('vendorBtn');
+      btn.href = `/products.html?vendorId=${vendor.id}`;
+    }
+
+    async function loadSimilar(productId, category, shopName) {
+      try {
+        const all = await api.get(`/products?category=${category}`);
+        const similar = all
+          .filter(p => p.id !== productId)
+          .slice(0, 4);
+
+        if (!similar.length) return;
+
+        document.getElementById('similarSection').style.display = 'block';
+        document.getElementById('similarSeeAll').href = `/products.html?category=${category}`;
+
+        const grid = document.getElementById('similarGrid');
+        grid.innerHTML = similar.map(p => `
+          <article class="product-card">
+            <a href="/product.html?id=${p.id}" class="product-img-wrap">
+              <img src="${p.imageUrl || 'https://picsum.photos/seed/' + p.id + '/600'}" alt="${p.title}" loading="lazy" />
+              ${p.category ? `<span class="product-cat-tag">${p.category}</span>` : ''}
+            </a>
+            <div class="product-body">
+              <a href="/product.html?id=${p.id}" class="product-title">${p.title}</a>
+              <div class="product-vendor">🏪 ${p.vendor?.shopName || ''}</div>
+              <div class="product-price">${formatPrice(p.price)}</div>
+            </div>
+            <div class="product-actions">
+              <button class="btn btn-primary btn-block" data-id="${p.id}">Ajouter au panier</button>
+            </div>
+          </article>
+        `).join('');
+
+        grid.querySelectorAll('button[data-id]').forEach(btn => {
+          btn.onclick = () => {
+            addToCart(btn.dataset.id, 1);
+            const original = btn.textContent;
+            btn.textContent = '✓ Ajouté';
+            btn.style.background = 'var(--success)';
+            btn.style.borderColor = 'var(--success)';
+            setTimeout(() => {
+              btn.textContent = original;
+              btn.style.background = '';
+              btn.style.borderColor = '';
+            }, 1200);
+          };
+        });
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    function capitalize(s) {
+      return s.charAt(0).toUpperCase() + s.slice(1);
     }
   </script>
 </body>

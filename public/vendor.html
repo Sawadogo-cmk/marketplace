@@ -8,95 +8,125 @@
 </head>
 <body>
   <div id="header"></div>
+
   <main>
-    <div class="page-head">
-      <div>
-        <h1>Ma boutique</h1>
-        <p class="subtitle" id="shopName"></p>
-      </div>
-      <a href="/products.html" class="btn">Voir la boutique →</a>
-    </div>
-
-    <div class="panel" id="stripeStatus" style="margin-bottom:24px;display:none">
-      <div class="flex-between" style="gap:16px;flex-wrap:wrap">
+    <div class="container">
+      <!-- En-tête -->
+      <div class="page-head">
         <div>
-          <h2>💳 Paiements Stripe</h2>
-          <p class="muted mt-2" id="stripeMessage">Chargement…</p>
+          <h1 id="shopName">Ma boutique</h1>
+          <p class="subtitle" id="shopStats"></p>
         </div>
-        <div class="flex gap-2">
+        <a href="/products.html" class="btn">Voir la boutique publique →</a>
+      </div>
+
+      <!-- Panneau Stripe -->
+      <div class="stripe-panel" id="stripeStatus" style="display:none">
+        <div class="stripe-panel-left">
+          <div class="stripe-icon">💳</div>
+          <div>
+            <div class="stripe-panel-title">Paiements Stripe</div>
+            <div class="stripe-panel-msg" id="stripeMessage">Chargement…</div>
+          </div>
+        </div>
+        <div class="stripe-panel-actions">
           <button class="btn btn-primary" id="stripeBtn" style="display:none">Activer mes paiements</button>
-          <button class="btn" id="stripeDashBtn" style="display:none">Ouvrir mon dashboard Stripe</button>
+          <button class="btn" id="stripeDashBtn" style="display:none">Ouvrir le dashboard Stripe</button>
         </div>
       </div>
-    </div>
 
-    <div id="alert"></div>
+      <div id="alert"></div>
 
-    <div class="vendor-grid">
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Nouveau produit</h2>
-        </div>
-        <form id="productForm">
-          <div class="field">
-            <label for="pTitle">Titre</label>
-            <input id="pTitle" type="text" name="title" placeholder="T-shirt noir" required />
+      <!-- Stats -->
+      <div class="stats-grid" id="statsGrid"></div>
+
+      <!-- Layout 2 colonnes -->
+      <div class="vendor-layout">
+        <!-- Formulaire -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>➕ Nouveau produit</h2>
           </div>
-          <div class="field">
-            <label for="pDesc">Description</label>
-            <textarea id="pDesc" name="description" placeholder="Description du produit…" required></textarea>
-          </div>
-          <div class="flex gap-2">
-            <div class="field" style="flex:1">
-              <label for="pPrice">Prix (FCFA)</label>
-              <input id="pPrice" type="number" name="price" step="1" min="0" placeholder="25000" required />
-              <span class="hint" id="pricePreview"></span>
+          <form id="productForm">
+            <div class="field">
+              <label for="pTitle">Titre</label>
+              <input id="pTitle" type="text" name="title" placeholder="Ex : Robe wax élégante" required />
             </div>
-            <div class="field" style="flex:1">
-              <label for="pStock">Stock</label>
-              <input id="pStock" type="number" name="stock" min="0" value="1" />
-            </div>
-          </div>
-          <div class="field">
-            <label for="pCategory">Catégorie</label>
-            <input id="pCategory" type="text" name="category" placeholder="mode, tech, maison…" />
-          </div>
-          <div class="field">
-            <label for="pImage">Photo</label>
-            <input id="pImage" type="file" name="image" accept="image/*" />
-            <span class="hint">JPG, PNG ou WebP — 3 Mo max</span>
-            <div id="preview" class="mt-2"></div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-lg btn-block">Publier</button>
-        </form>
-      </div>
 
-      <div class="panel">
-        <div class="panel-head">
-          <h2>Mes produits</h2>
-          <span class="muted" id="productCount"></span>
+            <div class="field">
+              <label for="pDesc">Description</label>
+              <textarea id="pDesc" name="description" placeholder="Décrivez votre produit…" required></textarea>
+            </div>
+
+            <div class="flex gap-2">
+              <div class="field" style="flex:1">
+                <label for="pPrice">Prix (FCFA)</label>
+                <input id="pPrice" type="number" name="price" step="1" min="0" placeholder="25000" required />
+                <span class="hint" id="pricePreview"></span>
+              </div>
+              <div class="field" style="flex:1">
+                <label for="pStock">Stock</label>
+                <input id="pStock" type="number" name="stock" min="0" value="1" />
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="pCategory">Catégorie</label>
+              <select id="pCategory" name="category">
+                <option value="">— Aucune —</option>
+                <option value="mode">👗 Mode</option>
+                <option value="tech">📱 Tech</option>
+                <option value="maison">🏠 Maison</option>
+                <option value="sport">⚽ Sport</option>
+                <option value="beaute">💄 Beauté</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="pImage">Photo</label>
+              <input id="pImage" type="file" name="image" accept="image/*" />
+              <span class="hint">JPG, PNG ou WebP — 3 Mo max</span>
+              <div id="preview" class="mt-2"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Publier le produit</button>
+          </form>
         </div>
-        <div id="productsList">
-          <p class="empty">Chargement…</p>
+
+        <!-- Liste produits -->
+        <div class="panel">
+          <div class="panel-head">
+            <h2>📦 Mes produits</h2>
+            <span class="muted" id="productCount"></span>
+          </div>
+          <div id="productsList">
+            <p class="empty">Chargement…</p>
+          </div>
         </div>
       </div>
     </div>
   </main>
 
+  <div id="footer"></div>
+
   <script type="module">
     import { api, formatPrice, showAlert } from '/js/api.js';
     import { renderHeader } from '/js/header.js';
+    import { renderFooter } from '/js/footer.js';
 
     await renderHeader('vendor');
+    renderFooter();
 
     const alertBox = document.getElementById('alert');
     const list = document.getElementById('productsList');
     const form = document.getElementById('productForm');
     const preview = document.getElementById('preview');
     const shopNameEl = document.getElementById('shopName');
+    const shopStats = document.getElementById('shopStats');
     const countEl = document.getElementById('productCount');
     const priceInput = document.getElementById('pPrice');
     const pricePreview = document.getElementById('pricePreview');
+    const statsGrid = document.getElementById('statsGrid');
 
     let me;
     try { me = await api.get('/auth/me'); } catch { location.href = '/login.html'; }
@@ -111,7 +141,7 @@
     const stripeDashBtn = document.getElementById('stripeDashBtn');
 
     async function loadStripeStatus() {
-      stripeStatusEl.style.display = 'block';
+      stripeStatusEl.style.display = 'flex';
       try {
         const s = await api.get('/connect/status');
 
@@ -124,11 +154,11 @@
         }
 
         if (s.status === 'ACTIVE') {
-          stripeMessage.innerHTML = '✅ <strong>Compte actif</strong> — Vous recevez automatiquement vos paiements.';
+          stripeMessage.innerHTML = '✅ <strong>Compte actif</strong> — Vous recevez vos paiements automatiquement.';
           stripeDashBtn.style.display = 'inline-flex';
           stripeBtn.style.display = 'none';
         } else if (s.detailsSubmitted) {
-          stripeMessage.innerHTML = '⏳ <strong>Vérification en cours</strong> — Stripe examine vos informations.';
+          stripeMessage.innerHTML = '⏳ <strong>Vérification en cours</strong> par Stripe.';
           stripeBtn.textContent = 'Compléter mes informations';
           stripeBtn.style.display = 'inline-flex';
           stripeDashBtn.style.display = 'none';
@@ -165,14 +195,14 @@
 
     const params = new URLSearchParams(location.search);
     if (params.get('stripe') === 'ok') {
-      showAlert(alertBox, '✓ Informations enregistrées. Vérification en cours par Stripe.', 'success');
+      showAlert(alertBox, '✓ Informations enregistrées. Vérification en cours.', 'success');
       setTimeout(loadStripeStatus, 1500);
     }
     if (params.get('stripe') === 'refresh') {
       showAlert(alertBox, 'Session expirée, veuillez réessayer.', 'error');
     }
 
-    // ---- Produits ----
+    // ---- Aperçu prix ----
     priceInput.oninput = () => {
       const v = parseInt(priceInput.value);
       pricePreview.textContent = v > 0
@@ -180,6 +210,7 @@
         : '';
     };
 
+    // ---- Aperçu image ----
     const fileInput = form.querySelector('input[name="image"]');
     fileInput.onchange = () => {
       preview.innerHTML = '';
@@ -195,55 +226,75 @@
       preview.appendChild(img);
     };
 
+    // ---- Stats ----
+    async function loadStats(products) {
+      const activeCount = products.filter(p => p.stock > 0).length;
+      const outOfStock = products.filter(p => p.stock === 0).length;
+      const totalValue = products.reduce((s, p) => s + p.price * p.stock, 0);
+
+      statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-label">Produits</div>
+          <div class="stat-value">${products.length}</div>
+          <div class="stat-sub">${activeCount} en stock · ${outOfStock} épuisé${outOfStock > 1 ? 's' : ''}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Valeur du stock</div>
+          <div class="stat-value">${formatPrice(totalValue)}</div>
+          <div class="stat-sub">Inventaire total</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Statut Stripe</div>
+          <div class="stat-value" id="stripeStatValue">…</div>
+          <div class="stat-sub">Paiements automatiques</div>
+        </div>
+      `;
+    }
+
+    // ---- Liste produits ----
     async function loadProducts() {
       const products = await api.get(`/products?vendorId=${me.vendor.id}`);
+
       countEl.textContent = products.length
         ? `${products.length} produit${products.length > 1 ? 's' : ''}`
         : '';
+
+      shopStats.textContent = products.length
+        ? `${products.length} produit${products.length > 1 ? 's' : ''} en ligne`
+        : 'Aucun produit pour le moment';
+
+      loadStats(products);
 
       if (!products.length) {
         list.innerHTML = `
           <div class="empty">
             <div class="empty-icon">📦</div>
-            <p>Aucun produit pour le moment</p>
+            <h3 style="margin-bottom:6px">Aucun produit</h3>
+            <p class="muted">Créez votre premier produit avec le formulaire.</p>
           </div>
         `;
         return;
       }
 
       list.innerHTML = `
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:60px"></th>
-                <th>Produit</th>
-                <th>Prix</th>
-                <th>Stock</th>
-                <th style="width:80px"></th>
-              </tr>
-            </thead>
-            <tbody>
-              ${products.map(p => `
-                <tr>
-                  <td>
-                    <img class="thumb"
-                         src="${p.imageUrl || 'https://picsum.photos/seed/' + p.id + '/80'}"
-                         alt="${p.title}" />
-                  </td>
-                  <td>
-                    <div style="font-weight:500">${p.title}</div>
-                    ${p.category ? `<div class="muted" style="font-size:12px">${p.category}</div>` : ''}
-                  </td>
-                  <td>${formatPrice(p.price)}</td>
-                  <td>${p.stock}</td>
-                  <td>
-                    <button class="btn btn-danger" data-id="${p.id}" style="padding:5px 10px;font-size:12.5px">Supprimer</button>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
+        <div class="product-list">
+          ${products.map(p => `
+            <div class="product-row">
+              <img src="${p.imageUrl || 'https://picsum.photos/seed/' + p.id + '/80'}"
+                   alt="${p.title}" />
+              <div class="product-row-info">
+                <div class="product-row-title">${p.title}</div>
+                <div class="product-row-meta">
+                  ${p.category ? `<span class="badge-cat">${p.category}</span>` : ''}
+                  <span class="muted">${formatPrice(p.price)}</span>
+                </div>
+              </div>
+              <div class="product-row-stock ${p.stock > 0 ? 'stock-ok' : 'stock-out'}">
+                ${p.stock > 0 ? `${p.stock} en stock` : 'Épuisé'}
+              </div>
+              <button class="btn btn-danger btn-xs" data-id="${p.id}">Supprimer</button>
+            </div>
+          `).join('')}
         </div>
       `;
 
@@ -258,6 +309,7 @@
       });
     }
 
+    // ---- Créer produit ----
     form.onsubmit = async (e) => {
       e.preventDefault();
       const submitBtn = form.querySelector('button[type="submit"]');
@@ -290,7 +342,7 @@
           imageUrl,
         });
 
-        showAlert(alertBox, '✓ Produit créé', 'success');
+        showAlert(alertBox, '✓ Produit publié !', 'success');
         form.reset();
         preview.innerHTML = '';
         pricePreview.textContent = '';
@@ -299,7 +351,7 @@
         showAlert(alertBox, e.message);
       } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Publier';
+        submitBtn.textContent = 'Publier le produit';
       }
     };
 

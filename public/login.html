@@ -21,7 +21,6 @@
 
       <div id="alert"></div>
 
-      <!-- Login -->
       <form id="loginForm">
         <div class="field">
           <label for="loginEmail">Email</label>
@@ -34,7 +33,6 @@
         <button type="submit" class="btn btn-primary btn-lg btn-block">Se connecter</button>
       </form>
 
-      <!-- Register -->
       <form id="registerForm" style="display:none">
         <div class="field">
           <label for="regName">Nom complet</label>
@@ -51,24 +49,28 @@
         <div class="field">
           <label for="roleSelect">Type de compte</label>
           <select name="role" id="roleSelect">
-            <option value="CLIENT">Client</option>
-            <option value="VENDOR">Vendeur</option>
+            <option value="CLIENT">🛒 Client — je veux acheter</option>
+            <option value="VENDOR">🏪 Vendeur — je veux vendre</option>
           </select>
         </div>
         <div class="field" id="shopNameWrap" style="display:none">
           <label for="regShop">Nom de la boutique</label>
-          <input id="regShop" type="text" name="shopName" placeholder="Ma boutique" />
+          <input id="regShop" type="text" name="shopName" placeholder="Ma super boutique" />
         </div>
         <button type="submit" class="btn btn-primary btn-lg btn-block">Créer mon compte</button>
       </form>
     </div>
   </div>
 
+  <div id="footer"></div>
+
   <script type="module">
     import { api, showAlert } from '/js/api.js';
     import { renderHeader } from '/js/header.js';
+    import { renderFooter } from '/js/footer.js';
 
     await renderHeader();
+    renderFooter();
 
     const alertBox = document.getElementById('alert');
     const loginForm = document.getElementById('loginForm');
@@ -96,7 +98,7 @@
       registerForm.style.display = 'flex';
       loginForm.style.display = 'none';
       formTitle.textContent = 'Créer un compte';
-      formSubtitle.textContent = 'Rejoignez Marketplace';
+      formSubtitle.textContent = 'Rejoignez la marketplace en quelques secondes';
       alertBox.innerHTML = '';
     };
 

@@ -10,52 +10,191 @@
   <div id="header"></div>
 
   <main>
-    <div class="flex-between mt-4">
-      <h1>Catalogue</h1>
-      <input type="search" id="search" placeholder="Rechercher un produit..." />
+    <div class="container">
+      <!-- En-tête de page -->
+      <div class="catalog-header">
+        <div class="catalog-header-left">
+          <h1>Catalogue</h1>
+          <p class="catalog-header-sub" id="catalogSub">Découvrez tous nos produits</p>
+        </div>
+        <div class="catalog-header-right">
+          <div class="search-wrapper">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <path d="m21 21-4.3-4.3"></path>
+            </svg>
+            <input type="search" id="search" class="search-input" placeholder="Rechercher un produit, une marque…" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout catalogue : sidebar + grille -->
+      <div class="catalog-layout">
+        <!-- Filtres -->
+        <aside class="filters">
+          <div class="filter-group">
+            <div class="filter-title">Catégories</div>
+            <label class="filter-option">
+              <input type="radio" name="cat" value="" checked />
+              <span>Toutes</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="cat" value="mode" />
+              <span>👗 Mode</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="cat" value="tech" />
+              <span>📱 Tech</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="cat" value="maison" />
+              <span>🏠 Maison</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="cat" value="sport" />
+              <span>⚽ Sport</span>
+            </label>
+            <label class="filter-option">
+              <input type="radio" name="cat" value="beaute" />
+              <span>💄 Beauté</span>
+            </label>
+          </div>
+
+          <div class="filter-group">
+            <div class="filter-title">Prix (FCFA)</div>
+            <div class="price-inputs">
+              <input type="number" id="priceMin" placeholder="0" min="0" />
+              <span>—</span>
+              <input type="number" id="priceMax" placeholder="999999" min="0" />
+            </div>
+            <button class="btn btn-block mt-2" id="applyPriceBtn" style="font-size:13px">Appliquer</button>
+          </div>
+
+          <div class="filter-group">
+            <div class="filter-title">Trier par</div>
+            <select id="sortSelect" class="select-input" style="width:100%">
+              <option value="recent">Plus récents</option>
+              <option value="price-asc">Prix croissant</option>
+              <option value="price-desc">Prix décroissant</option>
+              <option value="title">Nom (A-Z)</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <button class="btn btn-block" id="resetBtn">Réinitialiser les filtres</button>
+          </div>
+        </aside>
+
+        <!-- Grille produits -->
+        <section>
+          <div class="toolbar">
+            <div class="toolbar-info" id="resultCount">Chargement…</div>
+            <div class="view-toggle">
+              <button class="view-btn active" data-view="grid" title="Grille">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+              </button>
+            </div>
+          </div>
+          <div id="grid" class="grid"></div>
+          <div id="noResults" style="display:none"></div>
+        </section>
+      </div>
     </div>
-    <div id="grid" class="grid mt-6"></div>
   </main>
+
+  <div id="footer"></div>
 
   <script type="module">
     import { api, formatPrice } from '/js/api.js';
     import { addToCart } from '/js/cart.js';
     import { renderHeader } from '/js/header.js';
+    import { renderFooter } from '/js/footer.js';
 
     await renderHeader();
+    renderFooter();
 
     const grid = document.getElementById('grid');
+    const noResults = document.getElementById('noResults');
     const search = document.getElementById('search');
+    const resultCount = document.getElementById('resultCount');
+    const catalogSub = document.getElementById('catalogSub');
+    const sortSelect = document.getElementById('sortSelect');
+    const priceMin = document.getElementById('priceMin');
+    const priceMax = document.getElementById('priceMax');
+    const applyPriceBtn = document.getElementById('applyPriceBtn');
+    const resetBtn = document.getElementById('resetBtn');
 
-    async function load(q = '') {
+    let allProducts = [];
+    let filters = { q: '', category: '', min: null, max: null, sort: 'recent' };
+
+    async function fetchProducts() {
       grid.innerHTML = '<p class="empty">Chargement…</p>';
       try {
-        const url = '/products' + (q ? `?q=${encodeURIComponent(q)}` : '');
-        const products = await api.get(url);
-        render(products);
+        const params = new URLSearchParams();
+        if (filters.q) params.set('q', filters.q);
+        if (filters.category) params.set('category', filters.category);
+
+        const url = '/products' + (params.toString() ? '?' + params.toString() : '');
+        allProducts = await api.get(url);
+        applyLocalFilters();
       } catch (e) {
         grid.innerHTML = `<p class="empty">${e.message}</p>`;
       }
     }
 
-    function render(products) {
-      if (!products.length) {
-        grid.innerHTML = `<p class="empty">Aucun produit trouvé.</p>`;
+    function applyLocalFilters() {
+      let items = [...allProducts];
+
+      // Prix
+      if (filters.min != null) items = items.filter(p => p.price >= filters.min);
+      if (filters.max != null) items = items.filter(p => p.price <= filters.max);
+
+      // Tri
+      switch (filters.sort) {
+        case 'price-asc': items.sort((a, b) => a.price - b.price); break;
+        case 'price-desc': items.sort((a, b) => b.price - a.price); break;
+        case 'title': items.sort((a, b) => a.title.localeCompare(b.title)); break;
+        default: items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      }
+
+      render(items);
+    }
+
+    function render(items) {
+      const total = items.length;
+
+      if (!total) {
+        grid.innerHTML = '';
+        noResults.style.display = 'block';
+        noResults.innerHTML = `
+          <div class="empty">
+            <div class="empty-icon">🔍</div>
+            <h3>Aucun produit trouvé</h3>
+            <p class="muted mt-2">Essayez de modifier vos filtres ou votre recherche.</p>
+          </div>
+        `;
+        resultCount.textContent = '0 produit';
+        catalogSub.textContent = 'Aucun résultat';
         return;
       }
-      grid.innerHTML = products.map(p => `
-        <article class="card">
-          <a href="/product.html?id=${p.id}">
-            <img src="${p.imageUrl || 'https://via.placeholder.com/300?text=Produit'}" alt="${p.title}" />
+
+      noResults.style.display = 'none';
+      resultCount.innerHTML = `<strong>${total}</strong> produit${total > 1 ? 's' : ''} trouvé${total > 1 ? 's' : ''}`;
+      catalogSub.textContent = `${total} produit${total > 1 ? 's' : ''} disponible${total > 1 ? 's' : ''}`;
+
+      grid.innerHTML = items.map(p => `
+        <article class="product-card">
+          <a href="/product.html?id=${p.id}" class="product-img-wrap">
+            <img src="${p.imageUrl || 'https://picsum.photos/seed/' + p.id + '/600'}" alt="${p.title}" loading="lazy" />
+            ${p.category ? `<span class="product-cat-tag">${p.category}</span>` : ''}
           </a>
-          <div class="body">
-            <h3>${p.title}</h3>
-            <p class="vendor">${p.vendor?.shopName || ''}</p>
-            <p class="price">${formatPrice(p.price)}</p>
+          <div class="product-body">
+            <a href="/product.html?id=${p.id}" class="product-title">${p.title}</a>
+            <div class="product-vendor">🏪 ${p.vendor?.shopName || ''}</div>
+            <div class="product-price">${formatPrice(p.price)}</div>
           </div>
-          <div class="actions">
-            <a href="/product.html?id=${p.id}" class="btn" style="flex:1">Voir</a>
-            <button class="btn btn-primary" data-id="${p.id}" style="flex:1">Ajouter</button>
+          <div class="product-actions">
+            <button class="btn btn-primary btn-block" data-id="${p.id}">Ajouter au panier</button>
           </div>
         </article>
       `).join('');
@@ -63,19 +202,73 @@
       grid.querySelectorAll('button[data-id]').forEach(btn => {
         btn.onclick = () => {
           addToCart(btn.dataset.id, 1);
+          const original = btn.textContent;
           btn.textContent = '✓ Ajouté';
-          setTimeout(() => btn.textContent = 'Ajouter', 1000);
+          btn.style.background = 'var(--success)';
+          btn.style.borderColor = 'var(--success)';
+          setTimeout(() => {
+            btn.textContent = original;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+          }, 1200);
         };
       });
     }
 
-    let timer;
-    search.oninput = e => {
-      clearTimeout(timer);
-      timer = setTimeout(() => load(e.target.value.trim()), 250);
+    // Événements
+    let searchTimer;
+    search.oninput = (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        filters.q = e.target.value.trim();
+        fetchProducts();
+      }, 300);
     };
 
-    load();
+    document.querySelectorAll('input[name="cat"]').forEach(r => {
+      r.onchange = (e) => {
+        filters.category = e.target.value;
+        fetchProducts();
+      };
+    });
+
+    sortSelect.onchange = (e) => {
+      filters.sort = e.target.value;
+      applyLocalFilters();
+    };
+
+    applyPriceBtn.onclick = () => {
+      filters.min = priceMin.value ? parseInt(priceMin.value) : null;
+      filters.max = priceMax.value ? parseInt(priceMax.value) : null;
+      applyLocalFilters();
+    };
+
+    resetBtn.onclick = () => {
+      filters = { q: '', category: '', min: null, max: null, sort: 'recent' };
+      search.value = '';
+      priceMin.value = '';
+      priceMax.value = '';
+      sortSelect.value = 'recent';
+      document.querySelector('input[name="cat"][value=""]').checked = true;
+      fetchProducts();
+    };
+
+    // Chargement initial
+    fetchProducts();
+
+    // Lire les query params (si on arrive depuis une catégorie de l'accueil)
+    const params = new URLSearchParams(location.search);
+    if (params.get('category')) {
+      filters.category = params.get('category');
+      const radio = document.querySelector(`input[name="cat"][value="${filters.category}"]`);
+      if (radio) radio.checked = true;
+      fetchProducts();
+    }
+    if (params.get('q')) {
+      filters.q = params.get('q');
+      search.value = filters.q;
+      fetchProducts();
+    }
   </script>
 </body>
 </html>
