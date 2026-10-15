@@ -17,9 +17,22 @@
       <a href="/products.html" class="btn">Voir la boutique →</a>
     </div>
 
+    <div class="panel" id="stripeStatus" style="margin-bottom:24px;display:none">
+      <div class="flex-between" style="gap:16px;flex-wrap:wrap">
+        <div>
+          <h2>💳 Paiements Stripe</h2>
+          <p class="muted mt-2" id="stripeMessage">Chargement…</p>
+        </div>
+        <div class="flex gap-2">
+          <button class="btn btn-primary" id="stripeBtn" style="display:none">Activer mes paiements</button>
+          <button class="btn" id="stripeDashBtn" style="display:none">Ouvrir mon dashboard Stripe</button>
+        </div>
+      </div>
+    </div>
+
     <div id="alert"></div>
 
-    <div class="dashboard">
+    <div class="vendor-grid">
       <div class="panel">
         <div class="panel-head">
           <h2>Nouveau produit</h2>
@@ -29,12 +42,10 @@
             <label for="pTitle">Titre</label>
             <input id="pTitle" type="text" name="title" placeholder="T-shirt noir" required />
           </div>
-
           <div class="field">
             <label for="pDesc">Description</label>
             <textarea id="pDesc" name="description" placeholder="Description du produit…" required></textarea>
           </div>
-
           <div class="flex gap-2">
             <div class="field" style="flex:1">
               <label for="pPrice">Prix (FCFA)</label>
@@ -46,19 +57,16 @@
               <input id="pStock" type="number" name="stock" min="0" value="1" />
             </div>
           </div>
-
           <div class="field">
             <label for="pCategory">Catégorie</label>
             <input id="pCategory" type="text" name="category" placeholder="mode, tech, maison…" />
           </div>
-
           <div class="field">
             <label for="pImage">Photo</label>
             <input id="pImage" type="file" name="image" accept="image/*" />
             <span class="hint">JPG, PNG ou WebP — 3 Mo max</span>
             <div id="preview" class="mt-2"></div>
           </div>
-
           <button type="submit" class="btn btn-primary btn-lg btn-block">Publier</button>
         </form>
       </div>
@@ -96,6 +104,75 @@
 
     shopNameEl.textContent = me.vendor.shopName;
 
+    // ---- Stripe Connect ----
+    const stripeStatusEl = document.getElementById('stripeStatus');
+    const stripeMessage = document.getElementById('stripeMessage');
+    const stripeBtn = document.getElementById('stripeBtn');
+    const stripeDashBtn = document.getElementById('stripeDashBtn');
+
+    async function loadStripeStatus() {
+      stripeStatusEl.style.display = 'block';
+      try {
+        const s = await api.get('/connect/status');
+
+        if (!s.connected) {
+          stripeMessage.innerHTML = '⚠️ Activez vos paiements pour vendre sur la marketplace.';
+          stripeBtn.textContent = 'Activer mes paiements';
+          stripeBtn.style.display = 'inline-flex';
+          stripeDashBtn.style.display = 'none';
+          return;
+        }
+
+        if (s.status === 'ACTIVE') {
+          stripeMessage.innerHTML = '✅ <strong>Compte actif</strong> — Vous recevez automatiquement vos paiements.';
+          stripeDashBtn.style.display = 'inline-flex';
+          stripeBtn.style.display = 'none';
+        } else if (s.detailsSubmitted) {
+          stripeMessage.innerHTML = '⏳ <strong>Vérification en cours</strong> — Stripe examine vos informations.';
+          stripeBtn.textContent = 'Compléter mes informations';
+          stripeBtn.style.display = 'inline-flex';
+          stripeDashBtn.style.display = 'none';
+        } else {
+          stripeMessage.innerHTML = '⚠️ Complétez votre inscription Stripe pour activer les paiements.';
+          stripeBtn.textContent = 'Activer mes paiements';
+          stripeBtn.style.display = 'inline-flex';
+          stripeDashBtn.style.display = 'none';
+        }
+      } catch (e) {
+        stripeMessage.textContent = 'Erreur : ' + e.message;
+      }
+    }
+
+    stripeBtn.onclick = async () => {
+      try {
+        const { url } = await api.post('/connect/onboard');
+        location.href = url;
+      } catch (e) {
+        showAlert(alertBox, e.message);
+      }
+    };
+
+    stripeDashBtn.onclick = async () => {
+      try {
+        const { url } = await api.post('/connect/dashboard');
+        window.open(url, '_blank');
+      } catch (e) {
+        showAlert(alertBox, e.message);
+      }
+    };
+
+    loadStripeStatus();
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('stripe') === 'ok') {
+      showAlert(alertBox, '✓ Informations enregistrées. Vérification en cours par Stripe.', 'success');
+      setTimeout(loadStripeStatus, 1500);
+    }
+    if (params.get('stripe') === 'refresh') {
+      showAlert(alertBox, 'Session expirée, veuillez réessayer.', 'error');
+    }
+
+    // ---- Produits ----
     priceInput.oninput = () => {
       const v = parseInt(priceInput.value);
       pricePreview.textContent = v > 0
@@ -213,7 +290,7 @@
           imageUrl,
         });
 
-        showAlert(alertBox, 'Produit créé', 'success');
+        showAlert(alertBox, '✓ Produit créé', 'success');
         form.reset();
         preview.innerHTML = '';
         pricePreview.textContent = '';

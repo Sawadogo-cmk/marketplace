@@ -41,7 +41,20 @@ module.exports = async (req, res) => {
         });
       }
     }
-  } catch (e) {
+      if (event.type === 'account.updated') {
+      const account = event.data.object;
+      const vendorId = account.metadata?.vendorId;
+
+      if (vendorId) {
+        const active = account.charges_enabled && account.payouts_enabled;
+        await prisma.vendor.update({
+          where: { id: vendorId },
+          data: { status: active ? 'ACTIVE' : 'PENDING' },
+        });
+        console.log(`✓ Vendeur ${vendorId} → ${active ? 'ACTIVE' : 'PENDING'}`);
+      }
+    }
+} catch (e) {
     console.error('Webhook handler error:', e);
   }
 

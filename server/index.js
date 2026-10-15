@@ -25,6 +25,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/upload', require('./routes/upload'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/stripe', require('./routes/stripe'));
+app.use('/api/connect', require('./routes/connect'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
